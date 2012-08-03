@@ -1,0 +1,51 @@
+function [trdata,tedata] = prepareData()
+%
+% Downloads, preprocess and extracts features from Caltech 101
+% return trdata and tedata each of which is struct where
+%     .data contains the data matrix
+%     .labels contains the corresponding labels.
+%
+
+% the directory for downloading Caltech101
+c101dir = '../data/c101';
+ntr = 30;
+nte = 30;
+
+% load parameters
+% bs : stride for average downsampling in layer1 and layer1
+% bw : kernel size for average downsampling layer1 layer2
+% ct : connection table between layer1 and layer2 features
+% ker: weighting kernel for Local Contrast Normalization
+%      fixed gaussian weights.
+%      Not the convolutional kernels they are randomly generated
+%      below.
+params = load('../data/params.mat');
+
+% randomize convolution parameters (they are all zeros initially)
+params.kc.layer1 = -0.11 + 0.22 * rand(size(params.ct.layer1,1),9,9);
+params.kc.layer2 = -0.11 + 0.22 * rand(size(params.ct.layer2,1),9,9);
+
+% BH: added this
+params.c101 = 0;
+params.subSamplePercent = 0.5;
+params.split = 4;
+
+% first get caltech 101 data
+catdir = getC101(c101dir);
+
+fprintf('\n\n\n\n%s\n\n\n\n\n','Extracting Features with Random Kernels... (This might take long depending on your system)');
+
+if params.c101
+    % perorms random feature extraction and returns
+    % two matrices, data and corresponding labels
+    [data,labels] = processImages(catdir,params,ntr,nte);
+    
+    % prepare training and testing sets
+    % trdata and tedata and structs
+    % trdata.data contains a large training data
+    % matrix
+    [trdata,tedata] = prepareTrainTestData(data,labels,ntr,nte);
+    
+else
+    [trdata,trlabels,tedata,telabels] = processImages(catdir,params,ntr,nte);
+end
